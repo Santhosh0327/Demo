@@ -2,13 +2,15 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
-  Radio,
+  FlaskConical,
+  Activity,
   PlusCircle,
   BarChart3,
   Sparkles,
   Grid,
   History,
   TrendingUp,
+  Target,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -21,8 +23,10 @@ export const Sidebar: React.FC = () => {
 
   const navItems = [
     { label: 'Overview', path: '/', icon: LayoutDashboard },
-    { label: 'CasinoScores Connect', path: '/casinoscores', icon: Radio },
     { label: 'Enter Results', path: '/enter', icon: PlusCircle },
+    { label: 'Theory Performance', path: '/theory-performance', icon: Target },
+    { label: 'Strategy Lab', path: '/strategy-lab', icon: FlaskConical },
+    { label: 'Wheel Motion Analysis', path: '/motion-analysis', icon: Activity },
     { label: 'Pattern Analysis', path: '/patterns', icon: BarChart3 },
     { label: 'Prediction Center', path: '/predictions', icon: Sparkles },
     { label: 'Roulette Table', path: '/table', icon: Grid },

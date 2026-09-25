@@ -11,13 +11,24 @@ export interface SpinItem {
   snapshotId?: string; // snapshot created prior to this spin
 }
 
+export type PredictionEngineState =
+  | 'NOT_STARTED'
+  | 'INSUFFICIENT_HISTORY'
+  | 'GENERATING'
+  | 'AUTO_MODE_ACTIVE'
+  | 'UPDATE_FAILED';
+
 export interface RouletteSession {
   id: string;
   name: string;
   wheelType: WheelType;
+  isAutoModeActive?: boolean;
+  activationCutoffIndex?: number;
+  pnlConfig?: PnlConfig;
   createdAt: number;
   updatedAt: number;
 }
+
 
 export interface AlgorithmWeights {
   frequency: number;   // 0 to 100
@@ -126,5 +137,171 @@ export interface TrackingMetrics {
     hitNumber: boolean;
     cumulativeHitRate: number;
     baselineRate: number;
+    snapshotId?: string;
+    snapshotVersion?: number;
+    snapshotTimestamp?: number;
+    snapshotCutoff?: number;
+    candidateNumbers?: string[];
+    verificationStatus?: 'VERIFIED_HIT' | 'VERIFIED_MISS' | 'NOT_EVALUATED' | 'UNVERIFIED';
   }[];
 }
+
+
+export type CandidateUpdateStatus =
+  | 'WAITING_FOR_RESULT'
+  | 'RESULT_CONFIRMED'
+  | 'CALCULATING'
+  | 'NEXT_SPIN_READY'
+  | 'UPDATE_FAILED';
+
+export type EvaluationTargetFilter = 'top18' | 'all' | 'min2' | 'min4' | 'all_applicable';
+
+export type PayoutFormat = 'total_return' | 'net_winnings';
+
+export interface PnlConfig {
+  gameName?: string;
+  currency: string;
+  startingBankroll?: number;
+  payoutFormat: PayoutFormat;
+  payoutValue?: number;
+  stakePerNumber?: number;
+  totalStakeBudget?: number;
+  selectedCoverage: EvaluationTargetFilter;
+  requestedCoverageCount?: number;
+  pnlTrackingEnabled: boolean;
+  isConfigured?: boolean;
+}
+
+export interface CoverageCalculationResult {
+  requestedCount: number;
+  availableCount: number;
+  numberCount: number;
+  isAvailable: boolean;
+  stakePerNumber: number;
+  totalStake: number;
+  coveredReturn: number;
+  possibleNetProfit: number;
+  possibleNetLoss: number;
+  statusText: string;
+  coveredNumbers: string[];
+}
+
+export interface PnlSnapshotData {
+  config: PnlConfig;
+  coveredNumbers: string[];
+  coveredCount: number;
+  stakePerNumber: number;
+  totalStake: number;
+  possibleCoveredReturn: number;
+  possibleNetProfit: number;
+  possibleNetLoss: number;
+  isCoverageAvailable: boolean;
+  statusMessage?: string;
+  selectedPnl?: {
+    coverage: string;
+    numberCount: number;
+    totalStake: number;
+    stakePerNumber: number;
+    coveredReturn: number;
+    possibleNetProfit: number;
+    possibleNetLoss: number;
+    isAvailable: boolean;
+  };
+  table3?: {
+    count18?: CoverageCalculationResult;
+    count29?: CoverageCalculationResult;
+    count30?: CoverageCalculationResult;
+  };
+}
+
+export interface PnlEvaluationRecord {
+  spinId: string;
+  spinNumber: string;
+  spinIndex: number;
+  isCovered: boolean;
+  coveredReturn: number;
+  totalStake: number;
+  stakePerNumber: number;
+  payoutValue: number;
+  realizedPnl: number;
+  cumulativePnl: number;
+  currentBankroll: number;
+  snapshotVersion: number;
+  currency: string;
+}
+
+export interface PnlSummaryStats {
+  latestRealizedPnl: number | null;
+  cumulativePnl: number;
+  currentBankroll: number;
+  startingBankroll: number;
+  totalPnlSpins: number;
+  totalEvaluatedSpins?: number;
+  totalWinningSpins: number;
+  totalLosingSpins: number;
+  currency: string;
+  isConfigured?: boolean;
+}
+
+export interface CandidateSnapshotRecord {
+  id: string;
+  sessionId: string;
+  version: number;
+  spinCutoffIndex: number;
+  spinCutoffId: string | null;
+  timestamp: number;
+  allUnionNumbers: string[];
+  filterNumbers: {
+    all: string[];
+    min2: string[];
+    min4: string[];
+    all_applicable: string[];
+    top18: string[];
+  };
+  targetFilter: EvaluationTargetFilter;
+  targetNumbers: string[];
+  targetSetSize: number;
+  isRecalculatedUnchanged?: boolean;
+  pnlData?: PnlSnapshotData;
+}
+
+export type EvaluationResult = 'HIT' | 'MISS' | 'NOT_EVALUATED' | 'UNVERIFIED';
+
+export interface ConsolidatedEvaluationRecord {
+  id: string;
+  sessionId: string;
+  spinId: string;
+  spinNumber: string;
+  spinIndex: number;
+  snapshotId: string | null;
+  snapshotVersion: number | null;
+  snapshotCutoff?: number;
+  snapshotTimestamp?: number;
+  evaluatedFilter: EvaluationTargetFilter | null;
+  evaluatedNumbers: string[];
+  evaluatedSetSize: number;
+  result: EvaluationResult;
+  verificationStatus?: 'VERIFIED_HIT' | 'VERIFIED_MISS' | 'NOT_EVALUATED' | 'UNVERIFIED';
+  currentStreak: number;
+  longestStreak: number;
+  timestamp: number;
+  pnlRecord?: PnlEvaluationRecord | null;
+}
+
+export interface ConsolidatedPerformanceStats {
+  latestSpinNumber: string | null;
+  latestResult: EvaluationResult;
+  currentStreak: number;
+  longestStreak: number;
+  totalEvaluatedSpins: number;
+  totalHits: number;
+  totalMisses: number;
+  totalUnverified?: number;
+  hitRatePercentage: number;
+  latestEvaluatedVersion: number | null;
+  latestEvaluatedSetSize: number;
+  latestEvaluatedFilter: EvaluationTargetFilter | null;
+  pnlSummary?: PnlSummaryStats;
+}
+
+

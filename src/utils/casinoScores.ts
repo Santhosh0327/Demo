@@ -297,16 +297,32 @@ export function isRouletteGame(gameName: string): boolean {
 }
 
 /**
- * Validate whether a string is a valid roulette winning number for the given wheel variant
+ * Validate whether a string is a valid roulette winning number for the given wheel variant.
+ *
+ * Rules:
+ * - Must be exactly '0', '00', or a decimal integer from '1' to '36'.
+ * - Must contain ONLY digit characters (no commas, spaces, hyphens, dots, or other separators).
+ * - Leading zeros are rejected (e.g. '01', '07', '0036') — except the canonical '0' and '00'.
+ * - Multi-number concatenations ('3928') and sequences ('3,9,28') are always rejected.
+ * - The caller is responsible for trimming whitespace before calling this function.
  */
 export function isValidRouletteNumber(numStr: string, wheelType: 'European' | 'American'): boolean {
-  if (!numStr) return false;
+  if (!numStr || typeof numStr !== 'string') return false;
   const clean = numStr.trim();
+
+  // Only digit characters allowed — no separators, spaces, dots, negative signs, etc.
+  if (!/^\d+$/.test(clean)) return false;
+
+  // Canonical zero and double-zero
   if (clean === '0') return true;
   if (clean === '00') return wheelType === 'American';
 
+  // Reject leading zeros (e.g. '01', '007', '036') — these are never valid pocket IDs
+  if (clean.startsWith('0')) return false;
+
+  // Parse as decimal integer — must be in 1–36 range
   const num = parseInt(clean, 10);
-  if (isNaN(num)) return false;
+  if (isNaN(num) || !isFinite(num)) return false;
   return num >= 1 && num <= 36;
 }
 

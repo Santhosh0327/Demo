@@ -107,7 +107,7 @@ export const SpinHistoryPage: React.FC = () => {
           </label>
 
           <button
-            onClick={clearSessionSpins}
+            onClick={() => clearSessionSpins(false)}
             disabled={spins.length === 0}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-950/60 text-xs font-semibold text-rose-300 border border-rose-800 hover:bg-rose-900 disabled:opacity-40"
           >

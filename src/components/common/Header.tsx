@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RotateCcw, Plus, Layers, ShieldCheck, Edit3 } from 'lucide-react';
+import { RotateCcw, Plus, Layers, ShieldCheck, Edit3, Trash2, AlertTriangle } from 'lucide-react';
 import { useRouletteStore } from '../../store/useRouletteStore';
 import { SpinChip } from './SpinChip';
 
@@ -15,10 +15,13 @@ export const Header: React.FC = () => {
     setWheelType,
     spins,
     undoLastSpin,
+    clearSessionSpins,
   } = useRouletteStore();
 
   const [showNewSessionModal, setShowNewSessionModal] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
+  const [showClearConfirmation, setShowClearConfirmation] = useState(false);
+  const [resetPnlOnClear, setResetPnlOnClear] = useState(false);
   const [newSessionName, setNewSessionName] = useState('');
   const [renameValue, setRenameValue] = useState('');
 
@@ -146,8 +149,75 @@ export const Header: React.FC = () => {
             <RotateCcw className="h-3.5 w-3.5 text-amber-400" />
             <span className="hidden md:inline">Undo</span>
           </button>
+
+          <button
+            onClick={() => setShowClearConfirmation(true)}
+            disabled={spins.length === 0}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 text-xs font-bold text-rose-300 border border-rose-600/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            title="Clear Current Session Data"
+          >
+            <Trash2 className="h-3.5 w-3.5 text-rose-400" />
+            <span className="hidden sm:inline">Clear Session</span>
+          </button>
         </div>
       </div>
+
+      {/* Confirmation Modal for Clearing Session */}
+      {showClearConfirmation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl bg-[#161D29] border border-rose-500/40 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-400">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-100">
+                  Clear all data in {activeSession?.name || 'Main Session'}?
+                </h3>
+                <p className="text-xs text-rose-300/90 font-semibold mt-0.5">
+                  This action is irreversible.
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed bg-[#080B12] p-3.5 rounded-xl border border-[#232D3F]">
+              Clearing will permanently remove the current session's spins, candidate sets, mathematical calculations, forward-test evaluations, streaks, and prediction activation state.
+            </p>
+
+            <label className="flex items-center gap-2.5 p-3 rounded-xl bg-[#080B12] border border-[#232D3F] cursor-pointer text-xs text-slate-300 font-semibold">
+              <input
+                type="checkbox"
+                checked={resetPnlOnClear}
+                onChange={(e) => setResetPnlOnClear(e.target.checked)}
+                className="rounded border-slate-700 bg-slate-900 text-[#D4AF37] focus:ring-0 w-4 h-4 cursor-pointer"
+              />
+              <span>Also reset P&amp;L Calculator configuration (show empty inputs)</span>
+            </label>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowClearConfirmation(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-slate-100 bg-slate-800 hover:bg-slate-700 transition-colors"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  await clearSessionSpins(resetPnlOnClear);
+                  setShowClearConfirmation(false);
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black text-white bg-rose-600 hover:bg-rose-500 border border-rose-400 shadow-lg transition-all active:scale-95"
+              >
+                <Trash2 className="h-4 w-4" />
+                Clear Session
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal for creating a new session */}
       {showNewSessionModal && (

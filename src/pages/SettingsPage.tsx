@@ -114,7 +114,7 @@ export const SettingsPage: React.FC = () => {
           </button>
 
           <button
-            onClick={clearSessionSpins}
+            onClick={() => clearSessionSpins(false)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-950/60 text-xs font-semibold text-rose-300 border border-rose-800 hover:bg-rose-900"
           >
             <RefreshCcw className="h-4 w-4" /> Clear Active Session Database

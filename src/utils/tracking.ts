@@ -1,4 +1,4 @@
-import { CandidatePrediction, TrackingMetrics, WheelType } from '../types/roulette';
+import { CandidatePrediction, ConsolidatedEvaluationRecord, TrackingMetrics, WheelType } from '../types/roulette';
 import { getColumn, getDozen, getParity, getPocketColor, getRange } from './rouletteRules';
 
 export function resolvePrediction(
@@ -55,6 +55,97 @@ export function resolvePrediction(
   };
 }
 
+export function computeTrackingMetricsFromEvaluations(
+  evaluations: ConsolidatedEvaluationRecord[],
+  wheelType: WheelType
+): TrackingMetrics {
+  const verified = evaluations.filter((e) => e.result === 'HIT' || e.result === 'MISS');
+  const total = verified.length;
+
+  const denominator = wheelType === 'European' ? 37 : 38;
+  const numBaseline = (18 / denominator) * 100;
+  const binaryBaseline = (18 / denominator) * 100;
+  const dozenColBaseline = (12 / denominator) * 100;
+
+  if (total === 0) {
+    return {
+      totalPredictions: 0,
+      numberHits: 0,
+      numberHitRate: 0,
+      numberFairBaseline: Math.round(numBaseline * 10) / 10,
+      categoryMetrics: {
+        redBlack: { hits: 0, total: 0, rate: 0, baseline: Math.round(binaryBaseline * 10) / 10 },
+        dozen: { hits: 0, total: 0, rate: 0, baseline: Math.round(dozenColBaseline * 10) / 10 },
+        column: { hits: 0, total: 0, rate: 0, baseline: Math.round(dozenColBaseline * 10) / 10 },
+        oddEven: { hits: 0, total: 0, rate: 0, baseline: Math.round(binaryBaseline * 10) / 10 },
+        highLow: { hits: 0, total: 0, rate: 0, baseline: Math.round(binaryBaseline * 10) / 10 },
+      },
+      performanceHistory: [],
+    };
+  }
+
+  let numberHits = 0;
+  let rbHits = 0;
+  let dozenHits = 0;
+  let colHits = 0;
+  let oeHits = 0;
+  let hlHits = 0;
+
+  const performanceHistory: TrackingMetrics['performanceHistory'] = [];
+
+  verified.forEach((e) => {
+    const isHit = e.result === 'HIT';
+    if (isHit) numberHits++;
+
+    const actualNumber = e.spinNumber;
+    const actualColor = getPocketColor(actualNumber);
+    if (actualColor === 'red' || actualColor === 'black') rbHits++;
+
+    const actualDozen = getDozen(actualNumber);
+    if (actualDozen) dozenHits++;
+
+    const actualCol = getColumn(actualNumber);
+    if (actualCol) colHits++;
+
+    const actualParity = getParity(actualNumber);
+    if (actualParity) oeHits++;
+
+    const actualRange = getRange(actualNumber);
+    if (actualRange) hlHits++;
+
+    const cumRate = (numberHits / (performanceHistory.length + 1)) * 100;
+
+    performanceHistory.push({
+      spinIndex: e.spinIndex,
+      actualNumber: e.spinNumber,
+      hitNumber: isHit,
+      cumulativeHitRate: Math.round(cumRate * 10) / 10,
+      baselineRate: Math.round(numBaseline * 10) / 10,
+      snapshotId: e.snapshotId || undefined,
+      snapshotVersion: e.snapshotVersion || undefined,
+      snapshotTimestamp: e.snapshotTimestamp || undefined,
+      snapshotCutoff: e.snapshotCutoff || undefined,
+      candidateNumbers: e.evaluatedNumbers,
+      verificationStatus: e.verificationStatus || (isHit ? 'VERIFIED_HIT' : 'VERIFIED_MISS'),
+    });
+  });
+
+  return {
+    totalPredictions: total,
+    numberHits,
+    numberHitRate: Math.round((numberHits / total) * 1000) / 10,
+    numberFairBaseline: Math.round(numBaseline * 10) / 10,
+    categoryMetrics: {
+      redBlack: { hits: rbHits, total, rate: Math.round((rbHits / total) * 1000) / 10, baseline: Math.round(binaryBaseline * 10) / 10 },
+      dozen: { hits: dozenHits, total, rate: Math.round((dozenHits / total) * 1000) / 10, baseline: Math.round(dozenColBaseline * 10) / 10 },
+      column: { hits: colHits, total, rate: Math.round((colHits / total) * 1000) / 10, baseline: Math.round(dozenColBaseline * 10) / 10 },
+      oddEven: { hits: oeHits, total, rate: Math.round((oeHits / total) * 1000) / 10, baseline: Math.round(binaryBaseline * 10) / 10 },
+      highLow: { hits: hlHits, total, rate: Math.round((hlHits / total) * 1000) / 10, baseline: Math.round(binaryBaseline * 10) / 10 },
+    },
+    performanceHistory,
+  };
+}
+
 export function computeTrackingMetrics(
   predictions: CandidatePrediction[],
   wheelType: WheelType
@@ -72,13 +163,13 @@ export function computeTrackingMetrics(
       totalPredictions: 0,
       numberHits: 0,
       numberHitRate: 0,
-      numberFairBaseline: numBaseline,
+      numberFairBaseline: Math.round(numBaseline * 10) / 10,
       categoryMetrics: {
-        redBlack: { hits: 0, total: 0, rate: 0, baseline: binaryBaseline },
-        dozen: { hits: 0, total: 0, rate: 0, baseline: dozenColBaseline },
-        column: { hits: 0, total: 0, rate: 0, baseline: dozenColBaseline },
-        oddEven: { hits: 0, total: 0, rate: 0, baseline: binaryBaseline },
-        highLow: { hits: 0, total: 0, rate: 0, baseline: binaryBaseline },
+        redBlack: { hits: 0, total: 0, rate: 0, baseline: Math.round(binaryBaseline * 10) / 10 },
+        dozen: { hits: 0, total: 0, rate: 0, baseline: Math.round(dozenColBaseline * 10) / 10 },
+        column: { hits: 0, total: 0, rate: 0, baseline: Math.round(dozenColBaseline * 10) / 10 },
+        oddEven: { hits: 0, total: 0, rate: 0, baseline: Math.round(binaryBaseline * 10) / 10 },
+        highLow: { hits: 0, total: 0, rate: 0, baseline: Math.round(binaryBaseline * 10) / 10 },
       },
       performanceHistory: [],
     };
@@ -93,7 +184,7 @@ export function computeTrackingMetrics(
 
   const performanceHistory: TrackingMetrics['performanceHistory'] = [];
 
-  resolved.forEach((p, idx) => {
+  resolved.forEach((p) => {
     if (p.hitNumber) numberHits++;
     if (p.hitRedBlack) rbHits++;
     if (p.hitDozen) dozenHits++;
@@ -101,13 +192,16 @@ export function computeTrackingMetrics(
     if (p.hitOddEven) oeHits++;
     if (p.hitHighLow) hlHits++;
 
-    const cumRate = (numberHits / (idx + 1)) * 100;
+    const cumRate = (numberHits / (performanceHistory.length + 1)) * 100;
     performanceHistory.push({
-      spinIndex: idx + 1,
+      spinIndex: p.spinIndex,
       actualNumber: p.resolvedActualNumber!,
       hitNumber: !!p.hitNumber,
       cumulativeHitRate: Math.round(cumRate * 10) / 10,
       baselineRate: Math.round(numBaseline * 10) / 10,
+      snapshotId: p.id,
+      candidateNumbers: p.candidateNumbers,
+      verificationStatus: p.hitNumber ? 'VERIFIED_HIT' : 'VERIFIED_MISS',
     });
   });
 

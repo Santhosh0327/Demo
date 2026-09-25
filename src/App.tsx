@@ -5,13 +5,15 @@ import { Sidebar } from './components/common/Sidebar';
 import { Header } from './components/common/Header';
 import { Toast } from './components/common/Toast';
 import { OverviewPage } from './pages/OverviewPage';
-import { CasinoScoresConnectPage } from './pages/CasinoScoresConnectPage';
 import { EnterResultsPage } from './pages/EnterResultsPage';
 import { PatternAnalysisPage } from './pages/PatternAnalysisPage';
 import { PredictionCenterPage } from './pages/PredictionCenterPage';
 import { RouletteTablePage } from './pages/RouletteTablePage';
 import { SpinHistoryPage } from './pages/SpinHistoryPage';
 import { PerformanceAnalyticsPage } from './pages/PerformanceAnalyticsPage';
+import { TheoryPerformancePage } from './pages/TheoryPerformancePage';
+import { StrategyLabPage } from './pages/StrategyLabPage';
+import { WheelMotionAnalysisPage } from './pages/WheelMotionAnalysisPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { Loader2 } from 'lucide-react';
 
@@ -46,13 +48,16 @@ export const App: React.FC = () => {
         >
           <Routes>
             <Route path="/" element={<OverviewPage />} />
-            <Route path="/casinoscores" element={<CasinoScoresConnectPage />} />
+            <Route path="/strategy-lab" element={<StrategyLabPage />} />
+            <Route path="/motion-analysis" element={<WheelMotionAnalysisPage />} />
+            <Route path="/casinoscores" element={<Navigate to="/enter" replace />} />
             <Route path="/enter" element={<EnterResultsPage />} />
             <Route path="/patterns" element={<PatternAnalysisPage />} />
             <Route path="/predictions" element={<PredictionCenterPage />} />
             <Route path="/table" element={<RouletteTablePage />} />
             <Route path="/history" element={<SpinHistoryPage />} />
             <Route path="/performance" element={<PerformanceAnalyticsPage />} />
+            <Route path="/theory-performance" element={<TheoryPerformancePage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

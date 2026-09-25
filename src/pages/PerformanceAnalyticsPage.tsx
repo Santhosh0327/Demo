@@ -1,6 +1,7 @@
 import React from 'react';
 import { useRouletteStore } from '../store/useRouletteStore';
-import { computeTrackingMetrics } from '../utils/tracking';
+import { computeTrackingMetricsFromEvaluations } from '../utils/tracking';
+import { VerifiedPerformanceGroup } from '../components/liveAnalysis/VerifiedPerformanceGroup';
 import { DisclaimerBanner } from '../components/common/DisclaimerBanner';
 import {
   LineChart as RechartsLineChart,
@@ -14,10 +15,12 @@ import {
 import { TrendingUp, ShieldCheck, Target, Award, Percent, AlertCircle } from 'lucide-react';
 
 export const PerformanceAnalyticsPage: React.FC = () => {
-  const { predictions, wheelType } = useRouletteStore();
-  const metrics = computeTrackingMetrics(predictions, wheelType);
+  const { evaluations, spins, wheelType } = useRouletteStore();
+  const metrics = computeTrackingMetricsFromEvaluations(evaluations, wheelType);
 
   const hasData = metrics.totalPredictions > 0;
+  const totalSpinsInSession = spins.length;
+  const unEvaluatedCount = totalSpinsInSession - metrics.totalPredictions;
 
   return (
     <div className="space-y-6">
@@ -30,20 +33,40 @@ export const PerformanceAnalyticsPage: React.FC = () => {
             <TrendingUp className="h-6 w-6 text-[#D4AF37]" /> Performance Tracking & Baseline Comparison
           </h2>
           <p className="text-xs text-slate-400">
-            Evaluating immutable pre-spin snapshots against actual results vs Fair {wheelType} Wheel Baselines
+            Evaluating immutable pre-spin 18-candidate snapshots against actual results vs Fair {wheelType} Wheel Baselines
           </p>
         </div>
+
+        <div className="flex items-center gap-2 text-xs">
+          <span className="bg-[#161D29] text-slate-300 font-bold px-3 py-1.5 rounded-xl border border-[#232D3F]">
+            {totalSpinsInSession} Session Spins Logged
+          </span>
+          <span className="bg-emerald-950 text-emerald-300 font-bold px-3 py-1.5 rounded-xl border border-emerald-500/30">
+            {metrics.totalPredictions} Verified Pre-Spin Evaluations
+          </span>
+        </div>
       </div>
+
+      {unEvaluatedCount > 0 && (
+        <div className="rounded-xl bg-amber-950/20 border border-amber-500/30 p-3 text-xs text-amber-300 flex items-center justify-between">
+          <span>
+            <strong>Spin Count Note:</strong> {totalSpinsInSession} total spins logged in session history. First {unEvaluatedCount} spin{unEvaluatedCount !== 1 ? 's' : ''} had insufficient history (&lt;10 spins) and were excluded from accuracy denominator.
+          </span>
+          <span className="font-mono text-amber-400 font-bold ml-2">
+            {metrics.totalPredictions} Verified Evaluations
+          </span>
+        </div>
+      )}
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="rounded-2xl border border-[#232D3F] bg-[#161D29] p-5 shadow-xl space-y-2">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Resolved Predictions</span>
+            <span>Verified 18-Set Predictions</span>
             <Target className="h-4 w-4 text-[#D4AF37]" />
           </div>
           <div className="text-2xl font-black text-slate-100">{metrics.totalPredictions}</div>
-          <div className="text-[10px] text-slate-400">Total verified snapshot spins</div>
+          <div className="text-[10px] text-slate-400">Pre-spin snapshots evaluated</div>
         </div>
 
         <div className="rounded-2xl border border-emerald-500/30 bg-[#161D29] p-5 shadow-xl space-y-2">
@@ -110,7 +133,7 @@ export const PerformanceAnalyticsPage: React.FC = () => {
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <RechartsLineChart data={metrics.performanceHistory} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
-                <XAxis dataKey="spinIndex" stroke="#64748B" fontSize={10} tickLine={false} label={{ value: 'Spin Sequence', position: 'insideBottom', offset: -5, fill: '#64748B', fontSize: 10 }} />
+                <XAxis dataKey="spinIndex" stroke="#64748B" fontSize={10} tickLine={false} label={{ value: 'Spin Sequence #', position: 'insideBottom', offset: -5, fill: '#64748B', fontSize: 10 }} />
                 <YAxis stroke="#64748B" fontSize={10} tickLine={false} domain={[0, 100]} />
                 <Tooltip
                   contentStyle={{ backgroundColor: '#10151F', borderColor: '#232D3F', borderRadius: '12px' }}
@@ -140,64 +163,8 @@ export const PerformanceAnalyticsPage: React.FC = () => {
         )}
       </div>
 
-      {/* Category Performance Breakdown Grid */}
-      <div className="rounded-2xl border border-[#232D3F] bg-[#161D29] p-6 shadow-xl space-y-4">
-        <h3 className="text-sm font-bold text-slate-100">
-          Category Forecast Performance Breakdown
-        </h3>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="bg-[#080B12] p-4 rounded-xl border border-[#232D3F] space-y-1">
-            <span className="text-xs text-slate-400">Red / Black</span>
-            <div className="text-xl font-extrabold text-[#D4AF37]">
-              {hasData ? `${metrics.categoryMetrics.redBlack.rate}%` : 'N/A'}
-            </div>
-            <div className="text-[10px] text-slate-500">
-              Hits: {metrics.categoryMetrics.redBlack.hits} / {metrics.categoryMetrics.redBlack.total} (Baseline: {metrics.categoryMetrics.redBlack.baseline}%)
-            </div>
-          </div>
-
-          <div className="bg-[#080B12] p-4 rounded-xl border border-[#232D3F] space-y-1">
-            <span className="text-xs text-slate-400">Dozens (1st/2nd/3rd)</span>
-            <div className="text-xl font-extrabold text-[#D4AF37]">
-              {hasData ? `${metrics.categoryMetrics.dozen.rate}%` : 'N/A'}
-            </div>
-            <div className="text-[10px] text-slate-500">
-              Hits: {metrics.categoryMetrics.dozen.hits} / {metrics.categoryMetrics.dozen.total} (Baseline: {metrics.categoryMetrics.dozen.baseline}%)
-            </div>
-          </div>
-
-          <div className="bg-[#080B12] p-4 rounded-xl border border-[#232D3F] space-y-1">
-            <span className="text-xs text-slate-400">Columns (1st/2nd/3rd)</span>
-            <div className="text-xl font-extrabold text-[#D4AF37]">
-              {hasData ? `${metrics.categoryMetrics.column.rate}%` : 'N/A'}
-            </div>
-            <div className="text-[10px] text-slate-500">
-              Hits: {metrics.categoryMetrics.column.hits} / {metrics.categoryMetrics.column.total} (Baseline: {metrics.categoryMetrics.column.baseline}%)
-            </div>
-          </div>
-
-          <div className="bg-[#080B12] p-4 rounded-xl border border-[#232D3F] space-y-1">
-            <span className="text-xs text-slate-400">Odd / Even</span>
-            <div className="text-xl font-extrabold text-[#D4AF37]">
-              {hasData ? `${metrics.categoryMetrics.oddEven.rate}%` : 'N/A'}
-            </div>
-            <div className="text-[10px] text-slate-500">
-              Hits: {metrics.categoryMetrics.oddEven.hits} / {metrics.categoryMetrics.oddEven.total} (Baseline: {metrics.categoryMetrics.oddEven.baseline}%)
-            </div>
-          </div>
-
-          <div className="bg-[#080B12] p-4 rounded-xl border border-[#232D3F] space-y-1">
-            <span className="text-xs text-slate-400">High / Low</span>
-            <div className="text-xl font-extrabold text-[#D4AF37]">
-              {hasData ? `${metrics.categoryMetrics.highLow.rate}%` : 'N/A'}
-            </div>
-            <div className="text-[10px] text-slate-500">
-              Hits: {metrics.categoryMetrics.highLow.hits} / {metrics.categoryMetrics.highLow.total} (Baseline: {metrics.categoryMetrics.highLow.baseline}%)
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Expandable Audit Log & Proof */}
+      <VerifiedPerformanceGroup metrics={metrics} wheelType={wheelType} />
     </div>
   );
 };
